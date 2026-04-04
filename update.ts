@@ -7,29 +7,34 @@ const config = new Conf({ projectName: 'atabook-discord-status' });
 let discordTokenInput = config.get("discordAuthToken");
 let urlInput = config.get("ataUrl");
 let textQuestionInput = config.get("statusTextQuestion");
-let emojiQuestionInput = config.get("emojiTextQuestion");
+let emojiQuestionInput = config.get("statusEmojiQuestion");
+
+let updatedConf: StatusChangeArgs = {
+	discordToken: discordTokenInput,
+	atabookUrl: urlInput,
+	textQuestion: textQuestionInput,
+	emojiQuestion: emojiQuestionInput 
+}
 
 while (true) {
 	const updateChoice = await select({
-		message: 'What would you like to update? Exit with Ctrl+C',
+		message: 'What would you like to update?',
 		options: [
 			{ value: 'url', label: 'Atabook URL' },
 			{ value: 'text', label: 'Text question' },
 			{ value: 'emoji', label: 'Emoji question' },
 			{ value: 'auth', label: 'Discord auth token' },
+			{ value: 'exit', label: 'Exit setup' }
 		]
 	})
-	if (isCancel(updateChoice)) {
-		cancel('Ending setup');
-		process.exit(0);
-	} else if (updateChoice === 'url') {
+	if (updateChoice === 'url') {
 		urlInput = await text({
 			message: 'Input the link to your Atabook page:',
 			validate(value) {
-				if (!value.endsWith('.atabook.org')) return `Not a valid link.`
+				if (!value.trim().endsWith('.atabook.org')) return `Not a valid link.`
 			},
 		});
-		config.set('ataUrl', urlInput);
+		updatedConf.atabookUrl = urlInput.trim();
 	} else if (updateChoice === 'text') {
 		textQuestionInput = "";
 		const textChange = await confirm({
@@ -41,7 +46,7 @@ while (true) {
 				message: "Input the question of your Atabook that should alter your status's text:"
 			});
 		}
-		config.set('statusTextQuestion', textQuestionInput);
+		updatedConf.textQuestion = textQuestionInput.trim();
 	} else if (updateChoice === 'emoji') {
 		emojiQuestionInput = "";
 		const emojiChange = await confirm({
@@ -53,11 +58,22 @@ while (true) {
 				message: "Input the question of your Atabook that should alter your status's emoji:"
 			});
 		}
-		config.set('statusEmojiQuestion', emojiQuestionInput);
+		updatedConf.emojiQuestion = emojiQuestionInput.trim();
 	} else if (updateChoice === 'auth') {
 		discordTokenInput = await text({
 			message: 'Input your Discord authentification token:',
 		});
-		config.set('discordAuthToken', discordTokenInput);
+		updatedConf.discordToken = discordTokenInput.trim();
+	} else {
+		const saveChanges = await confirm({
+			message: "Would you like to save your changes?"
+		});
+		if (saveChanges) {
+			config.set('discordAuthToken', updatedConf.discordToken);
+			config.set("ataUrl", updatedConf.atabookUrl);
+			config.set("statusTextQuestion", updatedConf.textQuestion);
+			config.set("statusEmojiQuestion", updatedConf.emojiQuestion);
+		} 
+		process.exit(0);
 	}
 }

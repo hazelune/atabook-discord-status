@@ -3,14 +3,13 @@ import { isEqual } from 'lodash-es';
 import { getAtabookStatus } from './atabook-scraper.mts';
 
 function randomDelay(s: number) {
-	const time = s + (Math.random() * 20);
-	console.log(time);
+	const time = s + (Math.random() * 10);
+	console.log(`Checking again in ${Math.round(time)} seconds.`)
 	return new Promise(resolve => setTimeout(resolve, time*1000));
 }
 
 dotenv.config();
 
-const TOKEN = process.env.TOKEN;
 const USER_URL = "https://discord.com/api/v10/users/@me/settings"
 
 interface StatusChangeArguments {
@@ -26,18 +25,19 @@ export async function statusChange({discordToken, atabookUrl, textQuestion = "",
 		url: atabookUrl,
 		n: 1,
 		tq: textQuestion,
-		eq: emojiQuestion
+		eq: emojiQuestion,
+		verbose: false
 	});
 	while (true) {
-		console.log("loop");
 		const newStatusJson = await getAtabookStatus({
 			url: atabookUrl,
 			n: 1,
 			tq: textQuestion,
 			eq: emojiQuestion
 		});
+		console.log(newStatusJson);
 		if (!isEqual(newStatusJson, oldStatusJson)) {
-			console.log('these are diff');
+			console.log(`Changing status to "${newStatusJson.statusEmoji} ${newStatusJson.statusText}" at ${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}.`);
 			// deep copies to update what the previous newest message is
 			oldStatusJson = JSON.parse(JSON.stringify(newStatusJson));
 			const payloadJson = {
@@ -65,7 +65,7 @@ export async function statusChange({discordToken, atabookUrl, textQuestion = "",
 			});
 		}
 		else {
-			console.log("no status updates");
+			console.log(`No status updates at ${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}.`);
 		}
 		await randomDelay(20);
 	}
